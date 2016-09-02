@@ -1,0 +1,103 @@
+#!/bin/bash
+# requires: dcmtk, curl
+
+project_pc=AMBAC 	#Sigla das pastas no computador
+PROJECT=AMBAC		#Sigla do projeto no XNAT
+session=visit1
+USER=admin
+PASSWORD=admin
+XNAT=http://10.30.160.157 
+cd ../DOWNLOADS_SUITE/ #Diretório que estão as pastas AMBAC*** 
+directory=`pwd`
+
+# Create a session cookie, we want to re-use that session instead of providing
+# login information every time. Number of sessions might be limited otherwise to 1000.
+cookie=`curl -k -u $USER:$PASSWORD -X POST $XNAT/data/JSESSION`
+
+
+
+    
+  ######## Início da coleta de informações do cabeçalho DICOM ########
+
+  cd /home/$USER/dicom/
+  imgdcmpwd=ls */MR* | tail -n 1 | cut -f 2 -d '/'
+  
+  cd $imgdcmpwd
+  age=`dcmdump +P 0010,1010 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']' | grep '[0-9]{1,4}'`
+  weight=`dcmdump +P 0010,1030 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']'`
+  yob=`dcmdump +P 0010,0030 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']' | cut -c 1-4`
+  sex_dicom=`dcmdump +P 0010,0040 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']'`
+	if [ "$sex_dicom" = "M" ]; then	# Se estiver escrito M no cabeçalho, substitui por "male", se não substitui por "female"
+	  sex=male
+	else
+	  sex=female
+	fi
+
+  ################ Fim da coleta das informações #####################
+
+  cd $dir
+  #zip -r dicom dicom
+  #rm -rv dicom
+
+echo
+echo "###############################################"
+echo "Session ID is: $cookie"
+echo "###############################################"
+echo
+
+# create subject in case it does not exist
+echo
+echo "###########################"
+echo "Criando subject $i"
+echo "###########################"
+echo
+
+curl --cookie JSESSIONID=$cookie -k -X PUT "$XNAT/data/archive/projects/$PROJECT/subjects/$i?gender=$sex&age=$age&yob=$yob&weight=$weight"
+
+# create session in case it does not exist
+echo
+echo "######################"
+echo "Criando sessao $session"
+echo "######################"
+echo
+
+curl --cookie JSESSIONID=$cookie -k -X PUT $XNAT/data/archive/projects/$PROJECT/subjects/$i/experiments/${i}_${session}?xsiType=xnat:mrSessionData
+#curl --cookie JSESSIONID=$cookie -k -X PUT $XNAT/data/archive/projects/$PROJECT/subjects/$i/experiments/${i}_${session}?visit_id=$session 
+
+echo
+echo "##############"
+echo "Enviando DICOM"
+echo "##############"
+echo
+
+#curl  --cookie JSESSIONID=$cookie -s -k -X POST "$XNAT/data/services/import?extract=true&PROJECT_ID=$PROJECT&SUBJECT_ID=$i&EXPT_LABEL=${i}_${session}&archive=true&overwrite=append" -F "import-handler=DICOM-zip" -F "FILE=@dicom.zip"
+
+curl --cookie JSESSIONID=$cookie -s -k -X POST "$XNAT/data/services/import?extract=true&PROJECT_ID=$PROJECT&SUBJECT_ID=$i&EXPT_LABEL=${i}_${session}&archive=true&overwrite=append" -F "dicom.tar.gz=@dicom.tar.gz"
+
+#rm -v dicom.zip
+
+echo
+echo "#############################"	
+echo "Concluído subject $i"
+echo "#############################"
+echo	
+echo Aguardando 3 minutos...
+timecount(){
+        min=3
+        sec=0
+        while [ $min -ge 0 ]; do
+                while [ $sec -ge 0 ]; do
+                        echo -ne "00:0$min:$sec\033[0K\r"
+                        sec=$((sec-1))
+                        sleep 1
+                done
+                sec=59
+                min=$((min-1))
+        done
+}
+timecount
+
+cd $directory
+done
+
+#echo "$subject $session done"
