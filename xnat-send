@@ -22,10 +22,10 @@ cookie=`curl -k -u $USER:$PASSWORD -X POST $XNAT/data/JSESSION`
   cd /home/$USER/dicom/
   imgdcm=ls */MR* | tail -n 1 | cut -f 2 -d '/'
   
-  age=`dcmdump +P 0010,1010 $imgdcm +L | cut -sf 2 -d '[' | cut -sf 1 -d ']' | grep -E '[0-9]{1,4}'`
-  weight=`dcmdump +P 0010,1030 $imgdcm +L | cut -sf 2 -d '[' | cut -sf 1 -d ']'`
-  yob=`dcmdump +P 0010,0030 $imgdcm +L | cut -sf 2 -d '[' | cut -sf 1 -d ']' | cut -c 1-4`
-  sex_dicom=`dcmdump +P 0010,0040 $imgdcm +L | cut -sf 2 -d '[' | cut -sf 1 -d ']'`
+  age=`dcmdump +P 0010,1010 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']' | grep -E '[0-9]{1,4}'`
+  weight=`dcmdump +P 0010,1030 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']'`
+  yob=`dcmdump +P 0010,0030 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']' | cut -c 1-4`
+  sex_dicom=`dcmdump +P 0010,0040 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']'`
 	if [ "$sex_dicom" = "M" ]; then	# Se estiver escrito M no cabeçalho, substitui por "male", se não substitui por "female"
 	  sex=male
 	elif [ "$sex_dicom" = "F" ]; then
