@@ -32,15 +32,15 @@ IFS=$'\n'	#QUE JÁ CONTEM VALORES NELE... COISA DO BASH, NÃO ME PERGUNTE. NO CA
 		#É O QUE PRETENDO ATUALIZAR EM BREVE.
 
 #COLETA DE DADOS DO "dcmtk.log" GERADO
-lista_pacientes=($(cat dcmtk.log | sed -n '/(0010,0010)/p' | cut -f 2 -d '[' | cut -f 1 -d ']' | sed 1d))
-ano_aquisicao=($(cat dcmtk.log | sed -n '/(0008,0020)/p' | cut -f 2 -d '[' | cut -f 1 -d ']' | sed 1d | cut -c 1-4))
-mes_aquisicao=($(cat dcmtk.log | sed -n '/(0008,0020)/p' | cut -f 2 -d '[' | cut -f 1 -d ']' | sed 1d | cut -c 5-6))
-dia_aquisicao=($(cat dcmtk.log | sed -n '/(0008,0020)/p' | cut -f 2 -d '[' | cut -f 1 -d ']' | sed 1d | cut -c 7-8))
-estudo=($(cat dcmtk.log | sed -n '/(0008,1030)/p' | cut -f 2 -d '[' | cut -f 1 -d ']' | sed 1d))
+lista_pacientes=($(cat dcmtk.log | sed -n '/(0010,0010)/p' | cut -sf 2 -d '[' | cut -sf 1 -d ']' | sed 1d))
+ano_aquisicao=($(cat dcmtk.log | sed -n '/(0008,0020)/p' | cut -sf 2 -d '[' | cut -sf 1 -d ']' | sed 1d | cut -c 1-4))
+mes_aquisicao=($(cat dcmtk.log | sed -n '/(0008,0020)/p' | cut -sf 2 -d '[' | cut -sf 1 -d ']' | sed 1d | cut -c 5-6))
+dia_aquisicao=($(cat dcmtk.log | sed -n '/(0008,0020)/p' | cut -sf 2 -d '[' | cut -sf 1 -d ']' | sed 1d | cut -c 7-8))
+estudo=($(cat dcmtk.log | sed -n '/(0008,1030)/p' | cut -sf 2 -d '[' | cut -sf 1 -d ']' | sed 1d))
 #"numero" COLETA OS ACCESSION NUMBERS DOS PACIENTES ENCONTRADOS (SE HOUVER)
-numero=($(cat dcmtk.log | sed -n '/(0008,0050)/p' | cut -f 2 -d '[' | cut -f 1 -d ']' | sed 1d))
+numero=($(cat dcmtk.log | sed -n '/(0008,0050)/p' | cut -sf 2 -d '[' | cut -sf 1 -d ']' | sed 1d))
 #"UID" COLETA OS "StudyInstanceUID" DOS PACIENTES ENCONTRADOS (ESSE SEMPRE TEM!)
-uid=($(cat dcmtk.log | sed -n '/(0020,000d)/p' | cut -f 2 -d '[' | cut -f 1 -d ']' | sed 1d))
+uid=($(cat dcmtk.log | sed -n '/(0020,000d)/p' | cut -sf 2 -d '[' | cut -sf 1 -d ']' | sed 1d))
 
 #PEGA O NÚMERO TOTAL DE PACIENTES ENCONTRADOS
 total_pacientes=${#lista_pacientes[@]}
@@ -105,9 +105,9 @@ else
 fi
 
 #COLETA DE DADOS DO "dcmtk.log" GERADO
-lista_series=($(cat dcmtk.log | sed -n '/(0008,103e)/p' | cut -f 2 -d '[' | cut -f 1 -d ']' | sed 1d))
-numero_series=($(cat dcmtk.log | sed -n '/(0020,0011)/p' | cut -f 2 -d '[' | cut -f 1 -d ']' | sed 1d))
-uid_series=($(cat dcmtk.log | sed -n '/(0020,000e)/p' | cut -f 2 -d '[' | cut -f 1 -d ']' | sed 1d))
+lista_series=($(cat dcmtk.log | sed -n '/(0008,103e)/p' | cut -sf 2 -d '[' | cut -sf 1 -d ']' | sed 1d))
+numero_series=($(cat dcmtk.log | sed -n '/(0020,0011)/p' | cut -sf 2 -d '[' | cut -sf 1 -d ']' | sed 1d))
+uid_series=($(cat dcmtk.log | sed -n '/(0020,000e)/p' | cut -sf 2 -d '[' | cut -sf 1 -d ']' | sed 1d))
 
 IFS=$OLDIFS #OLHA ELE DE NOVO, NÃO ME PERGUNTE.
 
