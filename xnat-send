@@ -1,48 +1,70 @@
 #!/bin/bash
 # requires: dcmtk, curl
 
-project_pc=AMBAC 	#Sigla das pastas no computador
-PROJECT=AMBAC		#Sigla do projeto no XNAT
+#project_pc=AMBAC 	#Sigla das pastas no computador
+#PROJECT=AMBAC		#Sigla do projeto no XNAT
 session=visit1
-USER=admin
-PASSWORD=admin
-XNAT=http://10.30.160.157 
-cd ../DOWNLOADS_SUITE/ #Diretório que estão as pastas AMBAC*** 
-directory=`pwd`
+USER=$1
+PASSWORD=$2
+PROJECT=$3
+i=$4
+DIR=$5
+XNAT=http://10.63.183.85:8080/xnat
+#cd ../DOWNLOADS_SUITE/ #Diretório que estão as pastas AMBAC*** 
+####currentdir=$(pwd)
+
+###read -p "Usuário do XNAT:" USER
+###read -s -p "Senha:" PASSWORD
 
 # Create a session cookie, we want to re-use that session instead of providing
 # login information every time. Number of sessions might be limited otherwise to 1000.
 cookie=`curl -k -u $USER:$PASSWORD -X POST $XNAT/data/JSESSION`
 
+###read -p "Nome do projeto:" PROJECT
 
-
-    
-  ######## Início da coleta de informações do cabeçalho DICOM ########
-
-  cd /home/$USER/dicom/
-  imgdcm=ls */MR* | tail -n 1 | cut -f 2 -d '/'
   
-  age=`dcmdump +P 0010,1010 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']' | grep -E '[0-9]{1,4}'`
+  ######## Início da coleta de informações do cabeçalho DICOM ########
+  
+  cd $DIR/dicom/*
+  imgdcm=$(ls MR* | tail -n 1 | cut -f 2 -d '/')
+  
+  agewithy=`dcmdump +P 0010,1010 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']' | grep -E '[0-9]{1,4}'`
+  age=${agewithy%?}
   weight=`dcmdump +P 0010,1030 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']'`
   yob=`dcmdump +P 0010,0030 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']' | cut -c 1-4`
   sex_dicom=`dcmdump +P 0010,0040 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']'`
+
 	if [ "$sex_dicom" = "M" ]; then	# Se estiver escrito M no cabeçalho, substitui por "male", se não substitui por "female"
-	  sex=male
+	  sex_dicom=male
 	elif [ "$sex_dicom" = "F" ]; then
-	  sex=female
+	  sex_dicom=female
+	else	
+	  sex_dicom=unknown
 	fi
+	
+	#for varint in age yob weight ; do #Testa se os valores são integers, caso não sejam os substituem com unknown
+    	#  if ! [[ "${!varint}" =~ ^[0-9]+$ ]] ; then
+       	#    declare $varint=unknown
+    	#  fi
+	#done
+	
 
   ################ Fim da coleta das informações #####################
 
-  cd $dir
+  #cd $currentdir
   #zip -r dicom dicom
   #rm -rv dicom
+	
+  cd $DIR
+  tar -zcvf dicom.tar.gz dicom
 
 echo
 echo "###############################################"
 echo "Session ID is: $cookie"
 echo "###############################################"
 echo
+
+###read -p "Subject:" i
 
 # create subject in case it does not exist
 echo
@@ -80,10 +102,10 @@ echo "#############################"
 echo "Concluído subject $i"
 echo "#############################"
 echo	
-echo Aguardando 3 minutos...
+echo Aguarde...
 timecount(){
-        min=3
-        sec=0
+        min=0
+        sec=10
         while [ $min -ge 0 ]; do
                 while [ $sec -ge 0 ]; do
                         echo -ne "00:0$min:$sec\033[0K\r"
@@ -96,7 +118,7 @@ timecount(){
 }
 timecount
 
-cd $directory
-done
+cd $DIR
+###cd $currentdir
 
 #echo "$subject $session done"
