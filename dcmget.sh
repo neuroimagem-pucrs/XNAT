@@ -248,7 +248,7 @@ do
 		printf "\nDownload Completo\n"
 
 		case $xnatimport in
-			1 ) echo "Importando para o XNAT..."; bash xnat-send $USER $PASSWORD $PROJECT $SUBJECT $DIR;exit;;
+			1 ) echo "Importando para o XNAT..."; bash export-xnat $USER $PASSWORD $PROJECT $SUBJECT $DIR;exit;;
 			0 ) echo "Operação concluída.";exit;;
 			* ) exit;;
 		esac
