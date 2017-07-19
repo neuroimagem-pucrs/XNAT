@@ -1,0 +1,120 @@
+#!/bin/bash
+# requires: dcmtk, curl
+
+
+#USER=$1
+#PASSWORD=$2
+#PROJECT=$3
+#SUBJECT=$4
+#DIR=$5
+#XNAT=http://10.63.183.85:8080/xnat
+XNAT=http://10.63.183.33
+#XNAT=http://10.32.45.27
+session=visit1
+
+
+####currentdir=$(pwd)
+
+read -p "Usuário do XNAT:" USER
+read -s -p "Senha:" PASSWORD
+read -p "Nome do Projeto:" PROJECT
+read -p "Nome do Sujeito:" SUBJECT
+read -p "Caminho dos dados:" DIR
+
+# Create a session cookie, we want to re-use that session instead of providing
+# login information every time. Number of sessions might be limited otherwise to 1000.
+cookie=`curl -k -u $USER:$PASSWORD -X POST $XNAT/data/JSESSION`
+
+
+
+######## Início da coleta de informações do cabeçalho DICOM ########
+
+#Teste do tipo de arquivo para descompressão e obtenção do cabeçalho
+
+ cd $DIR
+ imgdcm=$(find . -type f | tail -n 1)
+
+ #imgdcm=$(ls MR* | tail -n 1 | cut -f 2 -d '/')
+ #imgdcmpwd=`find dicom -type f -print -quit | sed 's,/*[^/]\+/*$,,'`
+ # imgdcm=`find dicom -type f -print -quit | tail -c 4`
+ # cd ${imgdcmpwd}
+
+  age=`dcmdump +P 0010,1010 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']' | grep -E '[0-9]{1,4}' | sed 's/.$//'`
+  weight=`dcmdump +P 0010,1030 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']'`
+  yob=`dcmdump +P 0010,0030 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']' | cut -c 1-4`
+  sex_dicom=`dcmdump +P 0010,0040 $imgdcm +L | cut -f 2 -d '[' | cut -f 1 -d ']'`
+
+
+	#for varint in age yob weight ; do #Testa se os valores são integers, caso não sejam os substituem com unknown
+    	#  if ! [[ "${!varint}" =~ ^[0-9]+$ ]] ; then
+       	#    declare $varint=unknown
+    	#  fi
+	#done
+
+
+  ################ Fim da coleta das informações #####################
+
+  #cd $currentdir
+  cd ..
+   if [ -d "dicom" ]; then #ESSE IF SERVE PRA CRIAR DIFERENTES DIRETÓRIOS DICOM'S CASO JÁ EXISTAM
+        num=1
+                if [ -d dicom$num ]; then
+                        while [[ -d dicom$num ]] ; do
+                                let num++
+                                dicom_dir=dicom$num
+                                done
+                 else
+      	           dicom_dir=dicom$num
+                 fi
+   fi
+   mkdir -p ${dicom_dir}
+
+  zip -r ${dicom_dir} $DIR  
+  #rm -rv dicom
+
+  #cd $DIR
+
+  #zip -r dicom.zip dicom
+
+echo
+echo "###############################################"
+echo "Session ID is: $cookie"
+echo "###############################################"
+echo
+
+
+# create subject in case it does not exist
+echo
+echo "###########################"
+echo "Criando subject $SUBJECT"
+echo "###########################"
+echo
+
+curl --cookie JSESSIONID=$cookie -k -X PUT "$XNAT/data/archive/projects/$PROJECT/subjects/$SUBJECT?gender=$sex&age=$age&yob=$yob&weight=$weight"
+
+# create session in case it does not exist
+echo
+echo "######################"
+echo "Criando sessao $session"
+echo "######################"
+echo
+
+curl --cookie JSESSIONID=$cookie -k -X PUT $XNAT/data/archive/projects/$PROJECT/subjects/$SUBJECT/experiments/${SUBJECT}_${session}?xsiType=xnat:mrSessionData
+#curl --cookie JSESSIONID=$cookie -k -X PUT $XNAT/data/archive/projects/$PROJECT/subjects/i/experiments/${SUBJECT}_${session}?visit_id=$session 
+
+echo
+echo "##############"
+echo "Enviando DICOM"
+echo "##############"
+echo
+
+curl --cookie JSESSIONID=$cookie --data-binary @"dicom.zip" -H 'Content-Type: application/zip' $XNAT/data/services/import?import-handler=DICOM-zip\&PROJECT_ID=$PROJECT\&SUBJECT_ID=$SUBJECT\&EXPT_LABEL=${SUBJECT}_${session}\&overwrite=append\&prearchive=true\&inbody=true
+
+
+#curl -u admin:admin -k -X POST "http://10.63.183.33/data/archive/projects/Mat_teste/subjects/sub1/experiments/sub1_visit1/files?extract=true&prearchive=true&inbody=true" -F "import-handler=DICOM-zip" -F "dicom=@dicom.zip"
+
+
+#rm -v dicom.zip
+
+
+echo "$SUBJECT $session done"
