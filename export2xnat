@@ -7,9 +7,7 @@
 #PROJECT=$3
 #SUBJECT=$4
 #DIR=$5
-#XNAT=http://10.63.183.85:8080/xnat
-XNAT=http://10.63.183.33
-#XNAT=http://10.32.45.27
+XNAT=http://10.32.45.27
 session=visit1
 
 
