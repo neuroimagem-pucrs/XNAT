@@ -7,15 +7,16 @@
 #PROJECT=$3
 #SUBJECT=$4
 #DIR=$5
-XNAT=http://10.32.45.27
+#XNAT=http://10.32.45.27
+XNAT=http://10.63.183.33
 session=visit1
 
 
 ####currentdir=$(pwd)
 
 read -p "Usuário do XNAT:" USER
-read -s -p "Senha:" PASSWORD
-read -p "Nome do Projeto:" PROJECT
+read -s -rep $'Senha:' PASSWORD
+read -rep $'\nNome do Projeto:' PROJECT
 read -p "Nome do Sujeito:" SUBJECT
 read -p "Caminho dos dados:" DIR
 
@@ -56,23 +57,17 @@ cookie=`curl -k -u $USER:$PASSWORD -X POST $XNAT/data/JSESSION`
   cd ..
    if [ -d "dicom" ]; then #ESSE IF SERVE PRA CRIAR DIFERENTES DIRETÓRIOS DICOM'S CASO JÁ EXISTAM
         num=1
-                if [ -d dicom$num ]; then
-                        while [[ -d dicom$num ]] ; do
-                                let num++
-                                dicom_dir=dicom$num
-                                done
-                 else
-      	           dicom_dir=dicom$num
-                 fi
+        if [ -d dicom$num ]; then
+        	while [[ -d dicom$num ]] ; do
+                	let num++
+                        dicom_dir=dicom$num
+                        done
+        else
+      		dicom_dir=dicom$num
+        fi
    fi
-   mkdir -p ${dicom_dir}
-
   zip -r ${dicom_dir} $DIR  
-  #rm -rv dicom
 
-  #cd $DIR
-
-  #zip -r dicom.zip dicom
 
 echo
 echo "###############################################"
@@ -106,7 +101,7 @@ echo "Enviando DICOM"
 echo "##############"
 echo
 
-curl --cookie JSESSIONID=$cookie --data-binary @"dicom.zip" -H 'Content-Type: application/zip' $XNAT/data/services/import?import-handler=DICOM-zip\&PROJECT_ID=$PROJECT\&SUBJECT_ID=$SUBJECT\&EXPT_LABEL=${SUBJECT}_${session}\&overwrite=append\&prearchive=true\&inbody=true
+curl --cookie JSESSIONID=$cookie --data-binary @"${dicom_dir}.zip" -H 'Content-Type: application/zip' $XNAT/data/services/import?import-handler=DICOM-zip\&PROJECT_ID=$PROJECT\&SUBJECT_ID=$SUBJECT\&EXPT_LABEL=${SUBJECT}_${session}\&overwrite=append\&prearchive=true\&inbody=true
 
 
 #curl -u admin:admin -k -X POST "http://10.63.183.33/data/archive/projects/Mat_teste/subjects/sub1/experiments/sub1_visit1/files?extract=true&prearchive=true&inbody=true" -F "import-handler=DICOM-zip" -F "dicom=@dicom.zip"
